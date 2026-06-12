@@ -1,0 +1,28 @@
+// Prisma ORM — підключення до Supabase (PostgreSQL)
+// Документація: https://www.prisma.io/docs
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Library {
+  id              Int      @id @default(autoincrement())
+  name            String
+  name_en         String?
+  country         String
+  city            String
+  founded         Int?
+  collection_size BigInt?
+  description     String?
+  image_url       String?
+  website         String?
+  fun_fact        String?
+  created_at      DateTime @default(now())
+
+  @@map("libraries")
+}

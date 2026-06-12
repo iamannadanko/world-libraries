@@ -6,6 +6,7 @@
 
 - **Frontend:** React.js, Bootstrap 5, CSS Grid, Flexbox, медіазапити
 - **Backend:** Node.js, Express.js
+- **ORM:** Prisma ORM
 - **База даних:** Supabase (PostgreSQL)
 - **Збірка:** Vite
 
@@ -21,8 +22,8 @@ cd world-libraries
 ### 2. Налаштування Supabase
 
 1. Створіть проект на [supabase.com](https://supabase.com)
-2. Відкрийте **SQL Editor** та виконайте скрипт із файлу `supabase/schema.sql`
-3. Скопіюйте **URL** та **anon key** з **Settings → API**
+2. Перейдіть в **Settings → Database → Connection string → URI**
+3. Скопіюйте рядок підключення (Connection string)
 
 ### 3. Налаштування змінних середовища
 
@@ -32,8 +33,7 @@ cp .env.example .env
 
 Заповніть `.env`:
 ```
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-anon-key
+DATABASE_URL="postgresql://postgres:YOUR-PASSWORD@db.YOUR-PROJECT.supabase.co:5432/postgres"
 PORT=5000
 ```
 
@@ -44,10 +44,18 @@ npm install
 cd client && npm install && cd ..
 ```
 
-### 5. Заповнення бази даних
+### 5. Налаштування бази даних + заповнення
 
 ```bash
-npm run seed
+# Один крок — генерація Prisma Client, створення таблиць, заповнення даними:
+npm run setup
+```
+
+Або окремо:
+```bash
+npx prisma generate      # Генерація Prisma Client
+npx prisma db push        # Створення таблиць у Supabase
+npm run seed              # Заповнення 10 бібліотеками
 ```
 
 ### 6. Запуск
@@ -58,13 +66,17 @@ npm run dev
 
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:5000
+- Prisma Studio: `npm run prisma:studio` (GUI для бази даних)
 
 ## 📁 Структура проекту
 
 ```
 world-libraries/
+├── prisma/
+│   └── schema.prisma     # Prisma схема (модель Library)
 ├── server/
-│   ├── index.js          # Express сервер + API
+│   ├── index.js          # Express сервер + API (Prisma ORM)
+│   ├── prisma.js          # Prisma Client singleton
 │   └── seed.js           # Заповнення БД даними
 ├── client/
 │   ├── src/
@@ -72,8 +84,6 @@ world-libraries/
 │   │   ├── components/   # React компоненти
 │   │   └── styles/       # Кастомні стилі (Grid, Flexbox, медіазапити)
 │   └── index.html
-├── supabase/
-│   └── schema.sql        # SQL схема бази даних
 ├── .env.example
 └── package.json
 ```
@@ -87,3 +97,12 @@ world-libraries/
 | POST   | `/api/libraries`     | Додати нову бібліотеку   |
 | PUT    | `/api/libraries/:id` | Оновити бібліотеку       |
 | DELETE | `/api/libraries/:id` | Видалити бібліотеку      |
+
+## 🔧 Prisma команди
+
+```bash
+npx prisma studio        # Відкрити GUI для перегляду/редагування даних
+npx prisma db push        # Синхронізувати схему з базою даних
+npx prisma generate       # Перегенерувати Prisma Client
+npx prisma format         # Відформатувати schema.prisma
+```
