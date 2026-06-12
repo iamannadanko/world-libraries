@@ -53,16 +53,16 @@ const libraries = [
     fun_fact: 'Два мармурових леви біля входу отримали імена «Терпіння» та «Стійкість» від мера Фіорелло Ла Гуардіа.'
   },
   {
-    name: 'Російська державна бібліотека',
-    name_en: 'Russian State Library',
-    country: 'Росія',
-    city: 'Москва',
-    founded: 1862,
-    collection_size: BigInt(47000000),
-    description: 'Найбільша бібліотека Росії та одна з найбільших у світі. Раніше відома як Бібліотека імені Леніна. Зберігає найповнішу колекцію російських друкованих видань, а також рідкісні рукописи та стародруки.',
-    image_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/Moscow%2C_Russian_State_Library%2C_main_building.jpg/1280px-Moscow%2C_Russian_State_Library%2C_main_building.jpg',
-    website: 'https://www.rsl.ru',
-    fun_fact: 'Станція метро поруч і досі називається «Бібліотека імені Леніна».'
+    name: 'Німецька національна бібліотека',
+    name_en: 'Deutsche Nationalbibliothek',
+    country: 'Німеччина',
+    city: 'Лейпциг / Франкфурт',
+    founded: 1912,
+    collection_size: BigInt(45000000),
+    description: 'Центральна архівна бібліотека Німеччини, що зберігає всі публікації німецькою мовою з 1913 року. Має дві основні будівлі — у Лейпцигу та Франкфурті-на-Майні. Також включає Німецький музей книги та письма.',
+    image_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Deutsche_Nationalbibliothek_-_Erweiterung.jpg/1280px-Deutsche_Nationalbibliothek_-_Erweiterung.jpg',
+    website: 'https://www.dnb.de',
+    fun_fact: 'Щодня бібліотека отримує близько 2000 нових видань від видавців з усього світу.'
   },
   {
     name: 'Національна парламентська бібліотека Японії',
@@ -101,16 +101,16 @@ const libraries = [
     fun_fact: 'Чотири башти будівлі мають форму відкритих книг заввишки 79 метрів.'
   },
   {
-    name: 'Російська національна бібліотека',
-    name_en: 'National Library of Russia',
-    country: 'Росія',
-    city: 'Санкт-Петербург',
-    founded: 1795,
-    collection_size: BigInt(36000000),
-    description: 'Одна з найстаріших публічних бібліотек у Європі та друга за величиною бібліотека Росії. Заснована Катериною II. Зберігає рідкісні рукописи, стародруки та одну з найбільших колекцій Вольтера.',
-    image_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Spb_06-2012_National_Library_various_01.jpg/1280px-Spb_06-2012_National_Library_various_01.jpg',
-    website: 'https://nlr.ru',
-    fun_fact: 'Зберігає особисту бібліотеку Вольтера, придбану Катериною II.'
+    name: 'Національна бібліотека Іспанії',
+    name_en: 'Biblioteca Nacional de España',
+    country: 'Іспанія',
+    city: 'Мадрид',
+    founded: 1712,
+    collection_size: BigInt(34000000),
+    description: 'Головна бібліотека Іспанії та одна з найбільших у Європі. Заснована королем Філіпом V. Зберігає найповнішу колекцію іспаномовних публікацій, рідкісні рукописи, гравюри Гойї та перші видання Сервантеса.',
+    image_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Biblioteca_Nacional_de_Espa%C3%B1a_%28Madrid%29_07.jpg/1280px-Biblioteca_Nacional_de_Espa%C3%B1a_%28Madrid%29_07.jpg',
+    website: 'https://www.bne.es',
+    fun_fact: 'Зберігає першу ілюстровану карту Америки, створену Хуаном де ла Коса у 1500 році.'
   },
   {
     name: 'Королівська данська бібліотека',
