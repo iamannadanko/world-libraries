@@ -8,11 +8,48 @@ import {
   FaGlobe,
   FaLightbulb,
   FaTrash,
-  FaSpinner
+  FaSpinner,
+  FaLandmark,
+  FaGem,
+  FaChevronLeft,
+  FaChevronRight,
+  FaTimes,
+  FaExpand
 } from 'react-icons/fa';
 
 function formatNumber(num) {
   return num?.toLocaleString('uk-UA') || '—';
+}
+
+/* ───────── Lightbox gallery ───────── */
+function GalleryLightbox({ images, initialIndex, onClose }) {
+  const [idx, setIdx] = useState(initialIndex);
+
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowRight') setIdx((i) => (i + 1) % images.length);
+      if (e.key === 'ArrowLeft') setIdx((i) => (i - 1 + images.length) % images.length);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [images.length, onClose]);
+
+  return (
+    <div className="gallery-lightbox" onClick={onClose}>
+      <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
+        <button className="lightbox-close" onClick={onClose}><FaTimes /></button>
+        <button className="lightbox-prev" onClick={() => setIdx((i) => (i - 1 + images.length) % images.length)}>
+          <FaChevronLeft />
+        </button>
+        <img src={images[idx]} alt={`Фото ${idx + 1}`} />
+        <button className="lightbox-next" onClick={() => setIdx((i) => (i + 1) % images.length)}>
+          <FaChevronRight />
+        </button>
+        <div className="lightbox-counter">{idx + 1} / {images.length}</div>
+      </div>
+    </div>
+  );
 }
 
 function LibraryDetail() {
@@ -21,6 +58,8 @@ function LibraryDetail() {
   const [library, setLibrary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   useEffect(() => {
     fetchLibrary();
@@ -70,6 +109,9 @@ function LibraryDetail() {
     );
   }
 
+  // All images: main + gallery
+  const allImages = [library.image_url, ...(library.gallery_urls || [])].filter(Boolean);
+
   return (
     <section className="library-detail py-4">
       <div className="container">
@@ -81,7 +123,11 @@ function LibraryDetail() {
         <div className="row g-4">
           {/* Image */}
           <div className="col-lg-6">
-            <div className="detail-image-wrapper rounded-4 overflow-hidden shadow">
+            <div
+              className="detail-image-wrapper rounded-4 overflow-hidden shadow position-relative"
+              style={{ cursor: 'pointer' }}
+              onClick={() => { setLightboxIndex(0); setLightboxOpen(true); }}
+            >
               <img
                 src={library.image_url}
                 alt={library.name}
@@ -90,6 +136,11 @@ function LibraryDetail() {
                   e.target.src = 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=800';
                 }}
               />
+              {allImages.length > 1 && (
+                <div className="expand-hint">
+                  <FaExpand className="me-1" /> {allImages.length} фото
+                </div>
+              )}
             </div>
           </div>
 
@@ -144,9 +195,9 @@ function LibraryDetail() {
 
             {/* Fun fact */}
             {library.fun_fact && (
-              <div className="fun-fact-card p-3 rounded-3 mb-4">
+              <div className="fun-fact-card p-3 rounded-3 mb-3">
                 <div className="d-flex align-items-start gap-2">
-                  <FaLightbulb className="text-warning fs-5 mt-1" />
+                  <FaLightbulb className="text-warning fs-5 mt-1 flex-shrink-0" />
                   <div>
                     <strong className="d-block mb-1">Цікавий факт</strong>
                     <span className="text-muted">{library.fun_fact}</span>
@@ -155,16 +206,81 @@ function LibraryDetail() {
               </div>
             )}
 
+            {/* Architecture */}
+            {library.architecture && (
+              <div className="info-card p-3 rounded-3 mb-3">
+                <div className="d-flex align-items-start gap-2">
+                  <FaLandmark className="text-accent fs-5 mt-1 flex-shrink-0" />
+                  <div>
+                    <strong className="d-block mb-1">Архітектура</strong>
+                    <span className="text-muted">{library.architecture}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Notable items */}
+            {library.notable_items && (
+              <div className="info-card p-3 rounded-3 mb-3">
+                <div className="d-flex align-items-start gap-2">
+                  <FaGem className="text-accent fs-5 mt-1 flex-shrink-0" />
+                  <div>
+                    <strong className="d-block mb-1">Визначні експонати</strong>
+                    <span className="text-muted">{library.notable_items}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Actions */}
             <button
               onClick={handleDelete}
-              className="btn btn-outline-danger rounded-pill"
+              className="btn btn-outline-danger rounded-pill mt-2"
             >
               <FaTrash className="me-2" /> Видалити
             </button>
           </div>
         </div>
+
+        {/* ──── Photo Gallery ──── */}
+        {allImages.length > 1 && (
+          <div className="gallery-section mt-5">
+            <h3 className="fw-bold mb-4">
+              <span className="text-accent">📸</span> Фотогалерея
+            </h3>
+            <div className="gallery-grid">
+              {allImages.map((url, i) => (
+                <div
+                  key={i}
+                  className="gallery-item rounded-3 overflow-hidden shadow-sm"
+                  onClick={() => { setLightboxIndex(i); setLightboxOpen(true); }}
+                >
+                  <img
+                    src={url}
+                    alt={`${library.name} — фото ${i + 1}`}
+                    loading="lazy"
+                    onError={(e) => {
+                      e.target.src = 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=400';
+                    }}
+                  />
+                  <div className="gallery-overlay">
+                    <FaExpand />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Lightbox */}
+      {lightboxOpen && (
+        <GalleryLightbox
+          images={allImages}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
     </section>
   );
 }

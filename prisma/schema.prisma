@@ -21,8 +21,11 @@ model Library {
   collection_size BigInt?
   description     String?
   image_url       String?
+  gallery_urls    Json?
   website         String?
   fun_fact        String?
+  architecture    String?
+  notable_items   String?
   created_at      DateTime @default(now())
 
   @@map("libraries")
