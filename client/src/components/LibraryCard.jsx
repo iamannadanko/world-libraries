@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FaMapMarkerAlt, FaCalendarAlt, FaBookOpen } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaCalendarAlt, FaBookOpen, FaHeart, FaRegHeart } from 'react-icons/fa';
+import { useFavorites } from '../context/FavoritesContext';
 
 function formatNumber(num) {
   if (num >= 1000000) {
@@ -13,10 +14,15 @@ function formatNumber(num) {
 }
 
 function LibraryCard({ library, index }) {
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const liked = isFavorite(library.id);
+
   return (
     <div
       className="col-12 col-sm-6 col-lg-4 col-xl-3 d-flex"
-      style={{ animationDelay: `${index * 0.08}s` }}
+      data-aos="fade-up"
+      data-aos-delay={index * 80}
+      data-aos-duration="600"
     >
       <div className="card library-card h-100 border-0 shadow-sm">
         <div className="card-img-wrapper">
@@ -35,6 +41,14 @@ function LibraryCard({ library, index }) {
               {formatNumber(library.collection_size)}
             </span>
           </div>
+          {/* Favorite button */}
+          <button
+            className={`favorite-btn ${liked ? 'active' : ''}`}
+            onClick={(e) => { e.preventDefault(); toggleFavorite(library.id); }}
+            title={liked ? 'Прибрати з обраного' : 'Додати в обране'}
+          >
+            {liked ? <FaHeart /> : <FaRegHeart />}
+          </button>
         </div>
         <div className="card-body d-flex flex-column">
           <h5 className="card-title fw-bold mb-2">{library.name}</h5>

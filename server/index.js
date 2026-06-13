@@ -62,7 +62,7 @@ app.get('/api/libraries/:id', async (req, res) => {
 // POST — додати нову бібліотеку
 app.post('/api/libraries', async (req, res) => {
   try {
-    const { name, name_en, country, city, founded, collection_size, description, image_url, gallery_urls, website, fun_fact, architecture, notable_items } = req.body;
+    const { name, name_en, country, city, founded, collection_size, description, image_url, gallery_urls, website, fun_fact, architecture, notable_items, latitude, longitude } = req.body;
     const library = await prisma.library.create({
       data: {
         name,
@@ -77,7 +77,9 @@ app.post('/api/libraries', async (req, res) => {
         website: website || null,
         fun_fact: fun_fact || null,
         architecture: architecture || null,
-        notable_items: notable_items || null
+        notable_items: notable_items || null,
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null
       }
     });
     res.status(201).json(serializeLibrary(library));
@@ -90,7 +92,7 @@ app.post('/api/libraries', async (req, res) => {
 // PUT — оновити бібліотеку
 app.put('/api/libraries/:id', async (req, res) => {
   try {
-    const { name, name_en, country, city, founded, collection_size, description, image_url, gallery_urls, website, fun_fact, architecture, notable_items } = req.body;
+    const { name, name_en, country, city, founded, collection_size, description, image_url, gallery_urls, website, fun_fact, architecture, notable_items, latitude, longitude } = req.body;
     const data = {};
     if (name !== undefined) data.name = name;
     if (name_en !== undefined) data.name_en = name_en;
@@ -105,6 +107,8 @@ app.put('/api/libraries/:id', async (req, res) => {
     if (fun_fact !== undefined) data.fun_fact = fun_fact;
     if (architecture !== undefined) data.architecture = architecture;
     if (notable_items !== undefined) data.notable_items = notable_items;
+    if (latitude !== undefined) data.latitude = latitude ? parseFloat(latitude) : null;
+    if (longitude !== undefined) data.longitude = longitude ? parseFloat(longitude) : null;
 
     const library = await prisma.library.update({
       where: { id: parseInt(req.params.id) },

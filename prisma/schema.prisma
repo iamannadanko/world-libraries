@@ -26,6 +26,8 @@ model Library {
   fun_fact        String?
   architecture    String?
   notable_items   String?
+  latitude        Float?
+  longitude       Float?
   created_at      DateTime @default(now())
 
   @@map("libraries")

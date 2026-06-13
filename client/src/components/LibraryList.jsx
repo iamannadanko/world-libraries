@@ -1,12 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import LibraryCard from './LibraryCard';
-import { FaSpinner, FaExclamationTriangle, FaSearch } from 'react-icons/fa';
+import { FaSpinner, FaExclamationTriangle, FaSearch, FaSortAmountDown, FaSortAmountUp, FaFilter } from 'react-icons/fa';
+
+const SORT_OPTIONS = [
+  { key: 'collection_desc', label: 'Колекція ↓', field: 'collection_size', dir: 'desc' },
+  { key: 'collection_asc', label: 'Колекція ↑', field: 'collection_size', dir: 'asc' },
+  { key: 'founded_asc', label: 'Найстаріші', field: 'founded', dir: 'asc' },
+  { key: 'founded_desc', label: 'Наймолодші', field: 'founded', dir: 'desc' },
+  { key: 'name_asc', label: 'А → Я', field: 'name', dir: 'asc' },
+  { key: 'name_desc', label: 'Я → А', field: 'name', dir: 'desc' },
+];
 
 function LibraryList() {
   const [libraries, setLibraries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortKey, setSortKey] = useState('collection_desc');
+  const [countryFilter, setCountryFilter] = useState('');
 
   useEffect(() => {
     fetchLibraries();
@@ -25,11 +36,35 @@ function LibraryList() {
     }
   };
 
-  const filtered = libraries.filter(lib =>
-    lib.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lib.country?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lib.city?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Get unique countries for filter
+  const countries = [...new Set(libraries.map((l) => l.country))].sort();
+
+  // Filter
+  let filtered = libraries.filter((lib) => {
+    const matchesSearch =
+      lib.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lib.country?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lib.city?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCountry = !countryFilter || lib.country === countryFilter;
+    return matchesSearch && matchesCountry;
+  });
+
+  // Sort
+  const sortOption = SORT_OPTIONS.find((o) => o.key === sortKey);
+  if (sortOption) {
+    filtered = [...filtered].sort((a, b) => {
+      let valA = a[sortOption.field];
+      let valB = b[sortOption.field];
+      if (sortOption.field === 'name') {
+        valA = valA || '';
+        valB = valB || '';
+        return sortOption.dir === 'asc' ? valA.localeCompare(valB, 'uk') : valB.localeCompare(valA, 'uk');
+      }
+      valA = valA || 0;
+      valB = valB || 0;
+      return sortOption.dir === 'asc' ? valA - valB : valB - valA;
+    });
+  }
 
   if (loading) {
     return (
@@ -57,7 +92,7 @@ function LibraryList() {
     <section id="libraries" className="py-5 bg-light-custom">
       <div className="container">
         {/* Section header */}
-        <div className="row justify-content-center mb-5">
+        <div className="row justify-content-center mb-4">
           <div className="col-lg-6 text-center">
             <h2 className="fw-bold section-title mb-3">Колекція бібліотек</h2>
             <p className="text-muted">
@@ -66,9 +101,10 @@ function LibraryList() {
           </div>
         </div>
 
-        {/* Search bar */}
-        <div className="row justify-content-center mb-4">
-          <div className="col-md-6 col-lg-4">
+        {/* Controls row: Search + Sort + Filter */}
+        <div className="controls-row row g-3 justify-content-center mb-4">
+          {/* Search */}
+          <div className="col-md-4">
             <div className="input-group search-group shadow-sm">
               <span className="input-group-text bg-white border-end-0">
                 <FaSearch className="text-muted" />
@@ -76,15 +112,57 @@ function LibraryList() {
               <input
                 type="text"
                 className="form-control border-start-0"
-                placeholder="Пошук за назвою, містом, країною..."
+                placeholder="Пошук..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
+
+          {/* Sort */}
+          <div className="col-md-4 col-lg-3">
+            <div className="input-group shadow-sm">
+              <span className="input-group-text bg-white border-end-0">
+                <FaSortAmountDown className="text-muted" />
+              </span>
+              <select
+                className="form-select border-start-0"
+                value={sortKey}
+                onChange={(e) => setSortKey(e.target.value)}
+              >
+                {SORT_OPTIONS.map((opt) => (
+                  <option key={opt.key} value={opt.key}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Country filter */}
+          <div className="col-md-4 col-lg-3">
+            <div className="input-group shadow-sm">
+              <span className="input-group-text bg-white border-end-0">
+                <FaFilter className="text-muted" />
+              </span>
+              <select
+                className="form-select border-start-0"
+                value={countryFilter}
+                onChange={(e) => setCountryFilter(e.target.value)}
+              >
+                <option value="">Всі країни</option>
+                {countries.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
 
-        {/* Grid of cards — using CSS Grid + Flexbox */}
+        {/* Results count */}
+        <p className="text-muted text-center mb-4 small">
+          Знайдено: {filtered.length} з {libraries.length}
+        </p>
+
+        {/* Grid of cards */}
         <div className="row g-4 library-grid">
           {filtered.length > 0 ? (
             filtered.map((lib, index) => (
