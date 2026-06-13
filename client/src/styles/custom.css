@@ -643,6 +643,78 @@ body {
   .library-card:hover { transform: translateY(-8px); }
 }
 
+/* ---------- Auth Page ---------- */
+.auth-section {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+}
+
+.auth-card {
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.auth-header {
+  background: linear-gradient(135deg, var(--bg-dark), var(--bg-darker));
+}
+
+.auth-icon {
+  font-size: 2.5rem;
+  opacity: 0.9;
+}
+
+.auth-card .form-label {
+  color: var(--text-dark);
+}
+
+/* ---------- Profile Page ---------- */
+.profile-card {
+  overflow: hidden;
+}
+
+.profile-header {
+  background: linear-gradient(135deg, var(--bg-dark), var(--bg-darker));
+}
+
+.profile-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  color: #fff;
+  font-size: 2rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.profile-info-item {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.profile-info-item:last-child {
+  border-bottom: none;
+}
+
+/* Navbar avatar */
+.nav-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .library-card,
   .hero-title,

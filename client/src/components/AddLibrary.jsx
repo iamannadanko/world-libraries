@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FaPlus, FaSpinner } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { FaPlus, FaSpinner, FaLock, FaSignInAlt } from 'react-icons/fa';
 
 function AddLibrary() {
   const navigate = useNavigate();
+  const { isAuthenticated, getToken } = useAuth();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     name: '',
@@ -24,8 +26,10 @@ function AddLibrary() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!isAuthenticated) return;
     setLoading(true);
     try {
+      const token = await getToken();
       const body = {
         ...form,
         founded: parseInt(form.founded) || null,
@@ -33,7 +37,10 @@ function AddLibrary() {
       };
       const res = await fetch('/api/libraries', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify(body)
       });
       if (!res.ok) throw new Error('Помилка при збереженні');
@@ -45,12 +52,36 @@ function AddLibrary() {
     }
   };
 
+  // Показати блокування, якщо не авторизований
+  if (!isAuthenticated) {
+    return (
+      <section className="py-5">
+        <div className="container">
+          <div className="row justify-content-center">
+            <div className="col-md-6 text-center">
+              <div className="card border-0 shadow-sm rounded-4 p-5">
+                <FaLock className="fs-1 text-muted mb-3" />
+                <h3 className="fw-bold mb-3">Потрібна авторизація</h3>
+                <p className="text-muted mb-4">
+                  Щоб додавати нові бібліотеки, потрібно увійти або зареєструватися
+                </p>
+                <Link to="/auth" className="btn btn-accent rounded-pill px-4">
+                  <FaSignInAlt className="me-2" /> Увійти
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="py-5">
       <div className="container">
         <div className="row justify-content-center">
           <div className="col-lg-8">
-            <h2 className="fw-bold mb-4 text-center">Додати бібліотеку</h2>
+            <h2 className="fw-bold mb-4 text-center section-title">Додати бібліотеку</h2>
 
             <form onSubmit={handleSubmit} className="card border-0 shadow-sm p-4 rounded-4">
               <div className="row g-3">

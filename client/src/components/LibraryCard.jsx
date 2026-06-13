@@ -1,7 +1,8 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FaMapMarkerAlt, FaCalendarAlt, FaBookOpen, FaHeart, FaRegHeart } from 'react-icons/fa';
 import { useFavorites } from '../context/FavoritesContext';
+import { useAuth } from '../context/AuthContext';
 
 function formatNumber(num) {
   if (num >= 1000000) {
@@ -15,7 +16,18 @@ function formatNumber(num) {
 
 function LibraryCard({ library, index }) {
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const liked = isFavorite(library.id);
+
+  const handleFavorite = (e) => {
+    e.preventDefault();
+    if (!isAuthenticated) {
+      navigate('/auth');
+      return;
+    }
+    toggleFavorite(library.id);
+  };
 
   return (
     <div
@@ -44,8 +56,8 @@ function LibraryCard({ library, index }) {
           {/* Favorite button */}
           <button
             className={`favorite-btn ${liked ? 'active' : ''}`}
-            onClick={(e) => { e.preventDefault(); toggleFavorite(library.id); }}
-            title={liked ? 'Прибрати з обраного' : 'Додати в обране'}
+            onClick={handleFavorite}
+            title={!isAuthenticated ? 'Увійдіть для обраного' : liked ? 'Прибрати з обраного' : 'Додати в обране'}
           >
             {liked ? <FaHeart /> : <FaRegHeart />}
           </button>

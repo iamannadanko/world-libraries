@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useFavorites } from '../context/FavoritesContext';
+import { useAuth } from '../context/AuthContext';
 import LibraryCard from './LibraryCard';
-import { FaHeart, FaSpinner, FaArrowLeft } from 'react-icons/fa';
+import { FaHeart, FaSpinner, FaArrowLeft, FaLock, FaSignInAlt } from 'react-icons/fa';
 
 function Favorites() {
   const { favorites } = useFavorites();
+  const { isAuthenticated } = useAuth();
   const [libraries, setLibraries] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -15,6 +17,30 @@ function Favorites() {
       .then((data) => { setLibraries(data); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
+
+  // Якщо не авторизований
+  if (!isAuthenticated) {
+    return (
+      <section className="py-5">
+        <div className="container">
+          <div className="row justify-content-center">
+            <div className="col-md-6 text-center">
+              <div className="card border-0 shadow-sm rounded-4 p-5">
+                <FaLock className="fs-1 text-muted mb-3" />
+                <h3 className="fw-bold mb-3">Потрібна авторизація</h3>
+                <p className="text-muted mb-4">
+                  Увійдіть, щоб зберігати бібліотеки в обране
+                </p>
+                <Link to="/auth" className="btn btn-accent rounded-pill px-4">
+                  <FaSignInAlt className="me-2" /> Увійти
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   if (loading) {
     return (

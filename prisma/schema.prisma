@@ -12,7 +12,7 @@ datasource db {
 }
 
 model Library {
-  id              Int      @id @default(autoincrement())
+  id              Int        @id @default(autoincrement())
   name            String
   name_en         String?
   country         String
@@ -28,7 +28,19 @@ model Library {
   notable_items   String?
   latitude        Float?
   longitude       Float?
-  created_at      DateTime @default(now())
+  created_at      DateTime   @default(now())
+  favorites       Favorite[]
 
   @@map("libraries")
+}
+
+model Favorite {
+  id         Int      @id @default(autoincrement())
+  user_id    String
+  library_id Int
+  created_at DateTime @default(now())
+  library    Library  @relation(fields: [library_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, library_id])
+  @@map("favorites")
 }

@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import prisma from './prisma.js';
+import { requireAuth, optionalAuth } from './auth.js';
 
 dotenv.config();
 
@@ -28,7 +29,7 @@ function serializeLibrary(lib) {
   };
 }
 
-// ============ API ROUTES (Prisma ORM) ============
+// ============ LIBRARIES API ============
 
 // GET — всі бібліотеки
 app.get('/api/libraries', async (req, res) => {
@@ -59,8 +60,8 @@ app.get('/api/libraries/:id', async (req, res) => {
   }
 });
 
-// POST — додати нову бібліотеку
-app.post('/api/libraries', async (req, res) => {
+// POST — додати нову бібліотеку (тільки для авторизованих)
+app.post('/api/libraries', requireAuth, async (req, res) => {
   try {
     const { name, name_en, country, city, founded, collection_size, description, image_url, gallery_urls, website, fun_fact, architecture, notable_items, latitude, longitude } = req.body;
     const library = await prisma.library.create({
@@ -89,8 +90,8 @@ app.post('/api/libraries', async (req, res) => {
   }
 });
 
-// PUT — оновити бібліотеку
-app.put('/api/libraries/:id', async (req, res) => {
+// PUT — оновити бібліотеку (тільки для авторизованих)
+app.put('/api/libraries/:id', requireAuth, async (req, res) => {
   try {
     const { name, name_en, country, city, founded, collection_size, description, image_url, gallery_urls, website, fun_fact, architecture, notable_items, latitude, longitude } = req.body;
     const data = {};
@@ -121,8 +122,8 @@ app.put('/api/libraries/:id', async (req, res) => {
   }
 });
 
-// DELETE — видалити бібліотеку
-app.delete('/api/libraries/:id', async (req, res) => {
+// DELETE — видалити бібліотеку (тільки для авторизованих)
+app.delete('/api/libraries/:id', requireAuth, async (req, res) => {
   try {
     await prisma.library.delete({
       where: { id: parseInt(req.params.id) }
@@ -130,6 +131,81 @@ app.delete('/api/libraries/:id', async (req, res) => {
     res.json({ message: 'Deleted successfully' });
   } catch (err) {
     console.error('Error deleting library:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============ FAVORITES API ============
+
+// GET — обране поточного користувача
+app.get('/api/favorites', requireAuth, async (req, res) => {
+  try {
+    const favorites = await prisma.favorite.findMany({
+      where: { user_id: req.userId },
+      include: { library: true },
+      orderBy: { created_at: 'desc' }
+    });
+    res.json(favorites.map((f) => ({
+      ...f,
+      library: serializeLibrary(f.library)
+    })));
+  } catch (err) {
+    console.error('Error fetching favorites:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST — додати в обране
+app.post('/api/favorites/:libraryId', requireAuth, async (req, res) => {
+  try {
+    const libraryId = parseInt(req.params.libraryId);
+    const favorite = await prisma.favorite.create({
+      data: {
+        user_id: req.userId,
+        library_id: libraryId
+      }
+    });
+    res.status(201).json(favorite);
+  } catch (err) {
+    // Якщо вже є — не помилка
+    if (err.code === 'P2002') {
+      return res.json({ message: 'Вже в обраному' });
+    }
+    console.error('Error adding favorite:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE — прибрати з обраного
+app.delete('/api/favorites/:libraryId', requireAuth, async (req, res) => {
+  try {
+    const libraryId = parseInt(req.params.libraryId);
+    await prisma.favorite.deleteMany({
+      where: {
+        user_id: req.userId,
+        library_id: libraryId
+      }
+    });
+    res.json({ message: 'Видалено з обраного' });
+  } catch (err) {
+    console.error('Error removing favorite:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET — перевірка авторизації (повертає дані користувача)
+app.get('/api/auth/me', requireAuth, async (req, res) => {
+  try {
+    const favCount = await prisma.favorite.count({
+      where: { user_id: req.userId }
+    });
+    res.json({
+      id: req.userId,
+      email: req.userEmail,
+      favorites_count: favCount
+    });
+  } catch (err) {
+    console.error('Error fetching user:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
