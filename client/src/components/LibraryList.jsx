@@ -61,7 +61,7 @@ function LibraryList() {
           <div className="col-lg-6 text-center">
             <h2 className="fw-bold section-title mb-3">Колекція бібліотек</h2>
             <p className="text-muted">
-              {libraries.length} найбільших бібліотек із усього світу
+              Найбільші бібліотеки світу
             </p>
           </div>
         </div>
