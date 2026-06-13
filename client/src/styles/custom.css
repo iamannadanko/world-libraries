@@ -282,13 +282,19 @@ h1, h2, h3, h4, h5, h6,
 .hero-title {
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
   animation: fadeInUp 0.8s ease-out;
-  color: #FAF7F2;
+  color: #FFFFFF;
+}
+
+.hero-title .text-accent {
+  color: #E8D5B0 !important;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
 }
 
 .hero-subtitle {
-  opacity: 0.85;
+  opacity: 1;
   animation: fadeInUp 0.8s ease-out 0.2s both;
-  color: var(--gold);
+  color: #E0D6C8;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
 }
 
 /* ---------- Section Title ---------- */
