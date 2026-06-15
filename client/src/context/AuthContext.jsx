@@ -5,12 +5,31 @@ const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Перевірити чи адмін через API
+  const checkAdmin = async (token) => {
+    try {
+      const res = await fetch('/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setIsAdmin(data.isAdmin || false);
+      }
+    } catch {
+      setIsAdmin(false);
+    }
+  };
 
   useEffect(() => {
     // Перевірити поточну сесію
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      if (session?.access_token) {
+        checkAdmin(session.access_token);
+      }
       setLoading(false);
     });
 
@@ -18,6 +37,11 @@ export function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setUser(session?.user ?? null);
+        if (session?.access_token) {
+          checkAdmin(session.access_token);
+        } else {
+          setIsAdmin(false);
+        }
       }
     );
 
@@ -58,6 +82,7 @@ export function AuthProvider({ children }) {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     setUser(null);
+    setIsAdmin(false);
   };
 
   return (
@@ -68,7 +93,8 @@ export function AuthProvider({ children }) {
       signUp,
       signIn,
       signOut,
-      isAuthenticated: !!user
+      isAuthenticated: !!user,
+      isAdmin
     }}>
       {children}
     </AuthContext.Provider>

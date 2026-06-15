@@ -15,6 +15,7 @@ import MapView from './components/MapView';
 import Favorites from './components/Favorites';
 import Auth from './components/Auth';
 import Profile from './components/Profile';
+import AdminPanel from './components/AdminPanel';
 import Footer from './components/Footer';
 
 function HomePage() {
@@ -50,6 +51,7 @@ function App() {
                 <Route path="/favorites" element={<Favorites />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/admin" element={<AdminPanel />} />
               </Routes>
             </main>
             <Footer />

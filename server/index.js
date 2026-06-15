@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import prisma from './prisma.js';
-import { requireAuth, optionalAuth } from './auth.js';
+import { requireAuth, requireAdmin, optionalAuth } from './auth.js';
 
 dotenv.config();
 
@@ -31,10 +31,12 @@ function serializeLibrary(lib) {
 
 // ============ LIBRARIES API ============
 
-// GET — всі бібліотеки
-app.get('/api/libraries', async (req, res) => {
+// GET — всі бібліотеки (тільки approved для звичайних, всі для адміна)
+app.get('/api/libraries', optionalAuth, async (req, res) => {
   try {
+    const where = req.isAdmin ? {} : { status: 'approved' };
     const libraries = await prisma.library.findMany({
+      where,
       orderBy: { collection_size: 'desc' }
     });
     res.json(libraries.map(serializeLibrary));
@@ -60,7 +62,7 @@ app.get('/api/libraries/:id', async (req, res) => {
   }
 });
 
-// POST — додати нову бібліотеку (тільки для авторизованих)
+// POST — додати нову бібліотеку (авторизовані → статус pending, адмін → approved)
 app.post('/api/libraries', requireAuth, async (req, res) => {
   try {
     const { name, name_en, country, city, founded, collection_size, description, image_url, gallery_urls, website, fun_fact, architecture, notable_items, latitude, longitude } = req.body;
@@ -80,7 +82,9 @@ app.post('/api/libraries', requireAuth, async (req, res) => {
         architecture: architecture || null,
         notable_items: notable_items || null,
         latitude: latitude ? parseFloat(latitude) : null,
-        longitude: longitude ? parseFloat(longitude) : null
+        longitude: longitude ? parseFloat(longitude) : null,
+        status: req.isAdmin ? 'approved' : 'pending',
+        submitted_by: req.userEmail
       }
     });
     res.status(201).json(serializeLibrary(library));
@@ -90,8 +94,8 @@ app.post('/api/libraries', requireAuth, async (req, res) => {
   }
 });
 
-// PUT — оновити бібліотеку (тільки для авторизованих)
-app.put('/api/libraries/:id', requireAuth, async (req, res) => {
+// PUT — оновити бібліотеку (тільки для адміна)
+app.put('/api/libraries/:id', requireAdmin, async (req, res) => {
   try {
     const { name, name_en, country, city, founded, collection_size, description, image_url, gallery_urls, website, fun_fact, architecture, notable_items, latitude, longitude } = req.body;
     const data = {};
@@ -122,15 +126,163 @@ app.put('/api/libraries/:id', requireAuth, async (req, res) => {
   }
 });
 
-// DELETE — видалити бібліотеку (тільки для авторизованих)
-app.delete('/api/libraries/:id', requireAuth, async (req, res) => {
+// DELETE — видалити бібліотеку (тільки адмін може видалити напряму)
+app.delete('/api/libraries/:id', requireAdmin, async (req, res) => {
   try {
     await prisma.library.delete({
       where: { id: parseInt(req.params.id) }
     });
-    res.json({ message: 'Deleted successfully' });
+    res.json({ message: 'Видалено успішно' });
   } catch (err) {
     console.error('Error deleting library:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============ DELETE REQUESTS API ============
+
+// POST — створити запит на видалення (для авторизованих користувачів)
+app.post('/api/delete-requests', requireAuth, async (req, res) => {
+  try {
+    const { library_id, reason } = req.body;
+
+    // Перевірити чи вже є pending запит від цього користувача
+    const existing = await prisma.deleteRequest.findFirst({
+      where: {
+        library_id: parseInt(library_id),
+        user_id: req.userId,
+        status: 'pending'
+      }
+    });
+    if (existing) {
+      return res.json({ message: 'Запит вже надіслано', request: existing });
+    }
+
+    const request = await prisma.deleteRequest.create({
+      data: {
+        library_id: parseInt(library_id),
+        user_id: req.userId,
+        user_email: req.userEmail,
+        reason: reason || null
+      }
+    });
+    res.status(201).json(request);
+  } catch (err) {
+    console.error('Error creating delete request:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============ ADMIN API ============
+
+// GET — список бібліотек на модерації
+app.get('/api/admin/pending-libraries', requireAdmin, async (req, res) => {
+  try {
+    const libraries = await prisma.library.findMany({
+      where: { status: 'pending' },
+      orderBy: { created_at: 'desc' }
+    });
+    res.json(libraries.map(serializeLibrary));
+  } catch (err) {
+    console.error('Error fetching pending:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST — підтвердити бібліотеку
+app.post('/api/admin/approve-library/:id', requireAdmin, async (req, res) => {
+  try {
+    const library = await prisma.library.update({
+      where: { id: parseInt(req.params.id) },
+      data: { status: 'approved' }
+    });
+    res.json(serializeLibrary(library));
+  } catch (err) {
+    console.error('Error approving library:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST — відхилити бібліотеку
+app.post('/api/admin/reject-library/:id', requireAdmin, async (req, res) => {
+  try {
+    const library = await prisma.library.update({
+      where: { id: parseInt(req.params.id) },
+      data: { status: 'rejected' }
+    });
+    res.json(serializeLibrary(library));
+  } catch (err) {
+    console.error('Error rejecting library:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET — список запитів на видалення
+app.get('/api/admin/delete-requests', requireAdmin, async (req, res) => {
+  try {
+    const requests = await prisma.deleteRequest.findMany({
+      where: { status: 'pending' },
+      include: { library: true },
+      orderBy: { created_at: 'desc' }
+    });
+    res.json(requests.map((r) => ({
+      ...r,
+      library: serializeLibrary(r.library)
+    })));
+  } catch (err) {
+    console.error('Error fetching delete requests:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST — підтвердити видалення (видаляє бібліотеку)
+app.post('/api/admin/approve-delete/:id', requireAdmin, async (req, res) => {
+  try {
+    const request = await prisma.deleteRequest.findUnique({
+      where: { id: parseInt(req.params.id) }
+    });
+    if (!request) {
+      return res.status(404).json({ error: 'Запит не знайдено' });
+    }
+
+    // Видаляємо бібліотеку (cascade видалить і запити і обрані)
+    await prisma.library.delete({
+      where: { id: request.library_id }
+    });
+
+    res.json({ message: 'Бібліотеку видалено' });
+  } catch (err) {
+    console.error('Error approving delete:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST — відхилити запит на видалення
+app.post('/api/admin/reject-delete/:id', requireAdmin, async (req, res) => {
+  try {
+    const request = await prisma.deleteRequest.update({
+      where: { id: parseInt(req.params.id) },
+      data: { status: 'rejected' }
+    });
+    res.json(request);
+  } catch (err) {
+    console.error('Error rejecting delete:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET — статистика для адмін-панелі
+app.get('/api/admin/stats', requireAdmin, async (req, res) => {
+  try {
+    const [pendingLibraries, pendingDeletes, totalLibraries, totalUsers] = await Promise.all([
+      prisma.library.count({ where: { status: 'pending' } }),
+      prisma.deleteRequest.count({ where: { status: 'pending' } }),
+      prisma.library.count({ where: { status: 'approved' } }),
+      prisma.favorite.groupBy({ by: ['user_id'] }).then((r) => r.length)
+    ]);
+    res.json({ pendingLibraries, pendingDeletes, totalLibraries, totalUsers });
+  } catch (err) {
+    console.error('Error fetching admin stats:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -193,7 +345,7 @@ app.delete('/api/favorites/:libraryId', requireAuth, async (req, res) => {
   }
 });
 
-// GET — перевірка авторизації (повертає дані користувача)
+// GET — перевірка авторизації (повертає дані користувача + isAdmin)
 app.get('/api/auth/me', requireAuth, async (req, res) => {
   try {
     const favCount = await prisma.favorite.count({
@@ -202,6 +354,7 @@ app.get('/api/auth/me', requireAuth, async (req, res) => {
     res.json({
       id: req.userId,
       email: req.userEmail,
+      isAdmin: req.isAdmin,
       favorites_count: favCount
     });
   } catch (err) {

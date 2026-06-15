@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import {
   FaArrowLeft,
   FaMapMarkerAlt,
@@ -14,7 +15,9 @@ import {
   FaChevronLeft,
   FaChevronRight,
   FaTimes,
-  FaExpand
+  FaExpand,
+  FaCheck,
+  FaExclamationTriangle
 } from 'react-icons/fa';
 
 function formatNumber(num) {
@@ -55,11 +58,15 @@ function GalleryLightbox({ images, initialIndex, onClose }) {
 function LibraryDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isAuthenticated, isAdmin, getToken } = useAuth();
   const [library, setLibrary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [deleteRequested, setDeleteRequested] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [showDeleteForm, setShowDeleteForm] = useState(false);
 
   useEffect(() => {
     fetchLibrary();
@@ -78,13 +85,39 @@ function LibraryDetail() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm('Видалити цю бібліотеку?')) return;
+  // Адмін — видаляє напряму
+  const handleAdminDelete = async () => {
+    if (!window.confirm('Видалити цю бібліотеку назавжди?')) return;
     try {
-      await fetch(`/api/libraries/${id}`, { method: 'DELETE' });
+      const token = await getToken();
+      await fetch(`/api/libraries/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
       navigate('/');
     } catch (err) {
       alert('Помилка при видаленні');
+    }
+  };
+
+  // Користувач — надсилає запит на видалення
+  const handleDeleteRequest = async () => {
+    try {
+      const token = await getToken();
+      const res = await fetch('/api/delete-requests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ library_id: parseInt(id), reason: deleteReason })
+      });
+      if (res.ok) {
+        setDeleteRequested(true);
+        setShowDeleteForm(false);
+      }
+    } catch (err) {
+      alert('Помилка при надсиланні запиту');
     }
   };
 
@@ -119,6 +152,14 @@ function LibraryDetail() {
         <Link to="/" className="btn btn-outline-secondary rounded-pill mb-4">
           <FaArrowLeft className="me-2" /> Назад
         </Link>
+
+        {/* Pending badge */}
+        {library.status === 'pending' && (
+          <div className="alert alert-warning d-flex align-items-center gap-2 rounded-3 mb-4">
+            <FaExclamationTriangle />
+            <span>Ця бібліотека очікує підтвердження адміністратором</span>
+          </div>
+        )}
 
         <div className="row g-4">
           {/* Image */}
@@ -232,13 +273,59 @@ function LibraryDetail() {
               </div>
             )}
 
-            {/* Actions */}
-            <button
-              onClick={handleDelete}
-              className="btn btn-outline-danger rounded-pill mt-2"
-            >
-              <FaTrash className="me-2" /> Видалити
-            </button>
+            {/* Actions — тільки для авторизованих */}
+            {isAuthenticated && (
+              <div className="mt-3">
+                {isAdmin ? (
+                  /* Адмін — видаляє напряму */
+                  <button
+                    onClick={handleAdminDelete}
+                    className="btn btn-outline-danger rounded-pill"
+                  >
+                    <FaTrash className="me-2" /> Видалити (адмін)
+                  </button>
+                ) : deleteRequested ? (
+                  /* Запит вже надіслано */
+                  <div className="alert alert-success d-inline-flex align-items-center gap-2 rounded-pill px-4 py-2 mb-0">
+                    <FaCheck /> Запит на видалення надіслано адміністратору
+                  </div>
+                ) : showDeleteForm ? (
+                  /* Форма причини видалення */
+                  <div className="card border-0 shadow-sm p-3 rounded-3">
+                    <p className="fw-semibold mb-2">Причина видалення (необов'язково):</p>
+                    <textarea
+                      className="form-control mb-2"
+                      rows="2"
+                      value={deleteReason}
+                      onChange={(e) => setDeleteReason(e.target.value)}
+                      placeholder="Наприклад: дублікат, неактуальна інформація..."
+                    />
+                    <div className="d-flex gap-2">
+                      <button
+                        onClick={handleDeleteRequest}
+                        className="btn btn-outline-danger rounded-pill btn-sm"
+                      >
+                        <FaTrash className="me-1" /> Надіслати запит
+                      </button>
+                      <button
+                        onClick={() => setShowDeleteForm(false)}
+                        className="btn btn-outline-secondary rounded-pill btn-sm"
+                      >
+                        Скасувати
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* Кнопка для звичайного користувача */
+                  <button
+                    onClick={() => setShowDeleteForm(true)}
+                    className="btn btn-outline-danger rounded-pill"
+                  >
+                    <FaTrash className="me-2" /> Запит на видалення
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

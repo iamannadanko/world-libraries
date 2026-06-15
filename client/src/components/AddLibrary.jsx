@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FaPlus, FaSpinner, FaLock, FaSignInAlt } from 'react-icons/fa';
+import { FaPlus, FaSpinner, FaLock, FaSignInAlt, FaCheck, FaClock } from 'react-icons/fa';
 
 function AddLibrary() {
   const navigate = useNavigate();
-  const { isAuthenticated, getToken } = useAuth();
+  const { isAuthenticated, isAdmin, getToken } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({
     name: '',
     name_en: '',
@@ -44,7 +45,14 @@ function AddLibrary() {
         body: JSON.stringify(body)
       });
       if (!res.ok) throw new Error('Помилка при збереженні');
-      navigate('/');
+
+      if (isAdmin) {
+        // Адмін — одразу додається, переходимо на головну
+        navigate('/');
+      } else {
+        // Звичайний користувач — показуємо повідомлення про модерацію
+        setSubmitted(true);
+      }
     } catch (err) {
       alert(err.message);
     } finally {
@@ -76,12 +84,58 @@ function AddLibrary() {
     );
   }
 
+  // Успішно надіслано на модерацію
+  if (submitted) {
+    return (
+      <section className="py-5">
+        <div className="container">
+          <div className="row justify-content-center">
+            <div className="col-md-6 text-center">
+              <div className="card border-0 shadow-sm rounded-4 p-5">
+                <FaClock className="fs-1 text-warning mb-3" />
+                <h3 className="fw-bold mb-3">Запит надіслано!</h3>
+                <p className="text-muted mb-4">
+                  Вашу бібліотеку надіслано на перевірку. Адміністратор розгляне її та підтвердить або відхилить.
+                </p>
+                <div className="d-flex gap-2 justify-content-center">
+                  <Link to="/" className="btn btn-accent rounded-pill px-4">
+                    На головну
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setSubmitted(false);
+                      setForm({
+                        name: '', name_en: '', country: '', city: '',
+                        founded: '', collection_size: '', description: '',
+                        image_url: '', website: '', fun_fact: ''
+                      });
+                    }}
+                    className="btn btn-outline-secondary rounded-pill px-4"
+                  >
+                    <FaPlus className="me-1" /> Додати ще
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="py-5">
       <div className="container">
         <div className="row justify-content-center">
           <div className="col-lg-8">
             <h2 className="fw-bold mb-4 text-center section-title">Додати бібліотеку</h2>
+
+            {!isAdmin && (
+              <div className="alert alert-info d-flex align-items-center gap-2 rounded-3 mb-4">
+                <FaClock />
+                <span>Після додавання бібліотека буде надіслана на перевірку адміністратору</span>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="card border-0 shadow-sm p-4 rounded-4">
               <div className="row g-3">
@@ -201,7 +255,7 @@ function AddLibrary() {
                     ) : (
                       <FaPlus className="me-2" />
                     )}
-                    {loading ? 'Збереження...' : 'Додати бібліотеку'}
+                    {loading ? 'Збереження...' : (isAdmin ? 'Додати бібліотеку' : 'Надіслати на перевірку')}
                   </button>
                 </div>
               </div>

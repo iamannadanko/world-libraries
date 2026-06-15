@@ -12,7 +12,7 @@ datasource db {
 }
 
 model Library {
-  id              Int        @id @default(autoincrement())
+  id              Int              @id @default(autoincrement())
   name            String
   name_en         String?
   country         String
@@ -28,8 +28,11 @@ model Library {
   notable_items   String?
   latitude        Float?
   longitude       Float?
-  created_at      DateTime   @default(now())
+  status          String           @default("approved")
+  submitted_by    String?
+  created_at      DateTime         @default(now())
   favorites       Favorite[]
+  delete_requests DeleteRequest[]
 
   @@map("libraries")
 }
@@ -43,4 +46,17 @@ model Favorite {
 
   @@unique([user_id, library_id])
   @@map("favorites")
+}
+
+model DeleteRequest {
+  id         Int      @id @default(autoincrement())
+  library_id Int
+  user_id    String
+  user_email String?
+  reason     String?
+  status     String   @default("pending")
+  created_at DateTime @default(now())
+  library    Library  @relation(fields: [library_id], references: [id], onDelete: Cascade)
+
+  @@map("delete_requests")
 }

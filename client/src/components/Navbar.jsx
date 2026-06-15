@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaPlus, FaHome, FaChartBar, FaMapMarkedAlt, FaHeart, FaMoon, FaSun, FaSignInAlt, FaUserCircle } from 'react-icons/fa';
+import { FaPlus, FaHome, FaChartBar, FaMapMarkedAlt, FaHeart, FaMoon, FaSun, FaSignInAlt, FaUserCircle, FaShieldAlt } from 'react-icons/fa';
 import { useTheme } from '../context/ThemeContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { useAuth } from '../context/AuthContext';
@@ -9,7 +9,7 @@ function Navbar() {
   const location = useLocation();
   const { darkMode, toggleTheme } = useTheme();
   const { favorites } = useFavorites();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isAdmin, user } = useAuth();
 
   const displayName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || '';
 
@@ -19,6 +19,7 @@ function Navbar() {
     { path: '/map', icon: <FaMapMarkedAlt />, label: 'Карта' },
     { path: '/favorites', icon: <FaHeart />, label: 'Обрані', badge: favorites.length, authOnly: true },
     { path: '/add', icon: <FaPlus />, label: 'Додати', authOnly: true },
+    { path: '/admin', icon: <FaShieldAlt />, label: 'Адмін', adminOnly: true },
   ];
 
   return (
@@ -41,6 +42,8 @@ function Navbar() {
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav ms-auto gap-1 align-items-center">
             {navItems.map((item) => {
+              // Сховати adminOnly пункти для не-адмінів
+              if (item.adminOnly && !isAdmin) return null;
               // Сховати authOnly пункти для неавторизованих
               if (item.authOnly && !isAuthenticated) return null;
               return (
